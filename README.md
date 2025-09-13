@@ -17,10 +17,10 @@ A convenient wrapper for git worktree with organized directory structure and int
 
 ```bash
 # Install to /usr/local/bin
-curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtr/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtm/main/install.sh | bash
 
 # Install to custom directory
-INSTALL_DIR=~/.local/bin curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtr/main/install.sh | bash
+INSTALL_DIR=~/.local/bin curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtm/main/install.sh | bash
 ```
 
 ### Basic Usage

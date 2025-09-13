@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Remote installer for git-wtm (Git Worktree Manager)
-# Usage: curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtr/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtm/main/install.sh | bash
 
 set -e
 
 # Configuration
 BASE="main"
-REPO_URL="https://raw.githubusercontent.com/rinsyan0518/git-wtr/${BASE}"
+REPO_URL="https://raw.githubusercontent.com/rinsyan0518/git-wtm/${BASE}"
 SCRIPT_NAME="git-wtm"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
