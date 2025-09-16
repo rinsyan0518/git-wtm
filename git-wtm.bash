@@ -432,8 +432,10 @@ cmd_edit() {
 
     info "Opening worktree in $GIT_WTM_EDITOR: $selected_path"
 
+    cd "$selected_path"
+
     # Open the worktree directory in the editor
-    if "$GIT_WTM_EDITOR" "$selected_path"; then
+    if "$GIT_WTM_EDITOR"; then
         success "Editor session completed"
     else
         error "Failed to open editor"
@@ -461,8 +463,10 @@ cmd_ai() {
 
     info "Opening worktree in $GIT_WTM_AI: $selected_path"
 
+    cd "$selected_path"
+
     # Open the worktree directory in the AI
-    if "$GIT_WTM_AI" "$selected_path"; then
+    if "$GIT_WTM_AI"; then
         success "AI session completed"
     else
         error "Failed to open AI"
