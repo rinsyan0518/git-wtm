@@ -32,13 +32,6 @@ require_gh() {
     fi
 }
 
-# Check if command is available without exiting
-# Args: command_name
-# Returns: 0 if command exists, 1 otherwise
-has_command() {
-    command -v "$1" >/dev/null 2>&1
-}
-
 # Colors for output
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -96,14 +89,6 @@ EOF
 # Main entry point - parses commands and routes to appropriate handlers
 # Args: all command line arguments
 main() {
-    # Check required dependencies (fzf always required, gh only for PR commands)
-    require_fzf
-
-    # Only require gh for PR command
-    if [[ $# -gt 0 && "$1" == "pr" ]]; then
-        require_gh
-    fi
-
     if [[ $# -eq 0 ]]; then
         usage
         exit 1
@@ -266,13 +251,6 @@ cmd_add() {
 # Handle interactive PR selection using GitHub CLI
 # Returns: PR number on success, empty on failure/cancellation
 handle_interactive_pr_selection() {
-    if ! has_command gh; then
-        error "No PR number/URL provided and GitHub CLI not available"
-        echo "Usage: git-wt pr <pr-number|pr-url>"
-        echo "Or install GitHub CLI for interactive PR selection: https://cli.github.com/"
-        return 1
-    fi
-
     info "Fetching open PRs..."
     local pr_list
     pr_list=$(gh pr list --json number,title --template '{{range .}}{{.number}} - {{.title}}{{"\n"}}{{end}}' 2>/dev/null)
@@ -322,6 +300,8 @@ process_pr_argument() {
 # Args: [pr_number_or_url] (interactive selection if no args)
 cmd_pr() {
     ensure_git_repo
+    require_gh
+    require_fzf
 
     local pr_number
 
@@ -396,6 +376,7 @@ cmd_list() {
 # Outputs: worktree path to stdout
 cmd_path() {
     ensure_git_repo
+    require_fzf
 
     local selected_path
     selected_path=$(select_worktree "Get worktree path")
@@ -417,6 +398,7 @@ cmd_path() {
 # Requires: GIT_WTM_EDITOR environment variable
 cmd_edit() {
     ensure_git_repo
+    require_fzf
 
     local selected_path
     selected_path=$(select_worktree "Open worktree in editor")
@@ -448,6 +430,7 @@ cmd_edit() {
 # Requires: GIT_WTM_AI environment variable
 cmd_ai() {
     ensure_git_repo
+    require_fzf
 
     local selected_path
     selected_path=$(select_worktree "Open worktree in AI")
@@ -479,6 +462,7 @@ cmd_ai() {
 # Includes safety checks for current/main worktree
 cmd_remove() {
     ensure_git_repo
+    require_fzf
 
     local selected_path
     selected_path=$(select_worktree "Remove worktree")
