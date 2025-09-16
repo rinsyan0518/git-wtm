@@ -795,7 +795,7 @@ get_repo_name() {
 
     # Try to get repository name from remote URL
     if git remote get-url origin >/dev/null 2>&1; then
-        repo_name=$(git remote get-url origin | sed -E 's|.*[/:]([^/]+)(\.git)?/?$|\1|')
+        repo_name=$(git remote get-url origin | sed 's|.*[/:]||; s|\.git$||; s|/$||')
     else
         # Fallback to git root directory name
         repo_name=$(basename "$(git rev-parse --show-toplevel)")
