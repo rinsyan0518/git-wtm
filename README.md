@@ -29,6 +29,9 @@ curl -fsSL https://raw.githubusercontent.com/rinsyan0518/git-wtm/main/install.sh
 # Create a worktree for a branch
 git-wtm add feature-branch
 
+# Create a worktree from a tag
+git-wtm add v1.0.0
+
 # List all worktrees
 git-wtm list
 
@@ -48,18 +51,18 @@ git-wtm status
 
 ## Commands
 
-| Command               | Description                               |
-| --------------------- | ----------------------------------------- |
-| `add <branch> [path]` | Create a new worktree                     |
-| `pr [number\|url]`    | Create a worktree for PR review           |
-| `list`                | List all worktrees                        |
-| `path`                | Get path of a worktree (interactive)      |
-| `edit`                | Open a worktree in editor (interactive)   |
-| `ai`                  | Open a worktree in AI agent (interactive) |
-| `remove`              | Remove a worktree (interactive)           |
-| `prune`               | Clean up stale worktrees                  |
-| `status`              | Show status of all worktrees              |
-| `help`                | Show help message                         |
+| Command                    | Description                               |
+| -------------------------- | ----------------------------------------- |
+| `add <branch\|tag> [path]` | Create a new worktree from branch or tag  |
+| `pr [number\|url]`         | Create a worktree for PR review           |
+| `list`                     | List all worktrees                        |
+| `path`                     | Get path of a worktree (interactive)      |
+| `edit`                     | Open a worktree in editor (interactive)   |
+| `ai`                       | Open a worktree in AI agent (interactive) |
+| `remove`                   | Remove a worktree (interactive)           |
+| `prune`                    | Clean up stale worktrees                  |
+| `status`                   | Show status of all worktrees              |
+| `help`                     | Show help message                         |
 
 ## Directory Structure
 
@@ -120,6 +123,21 @@ cd ~/.git-worktree/my-project/pr-456
 
 # Clean up when review is complete
 git-wtm remove
+```
+
+### Working with Tags
+
+```bash
+# Create worktree from a specific release tag
+git-wtm add v1.0.0
+
+# Create worktree from a pre-release tag
+git-wtm add v2.0.0-beta.1
+
+# The worktree is created with a new branch name 'tags-v1.0.0'
+cd ~/.git-worktree/my-project/tags-v1.0.0
+
+# Work with the tagged version...
 ```
 
 ### Multiple Editor Support

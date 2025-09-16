@@ -55,16 +55,16 @@ USAGE:
     git-wtm <command> [options]
 
 COMMANDS:
-    add <branch> [path]    Create a new worktree
-    pr [number|url]        Create a worktree for PR review
-    list                   List all worktrees
-    path                   Get path of a worktree (interactive)
-    edit                   Open a worktree in editor (interactive)
-    ai                     Open a worktree in AI (interactive)
-    remove                 Remove a worktree (interactive)
-    prune                  Clean up stale worktrees
-    status                 Show status of all worktrees
-    help                   Show this help message
+    add <branch|tag> [path]    Create a new worktree from branch or tag
+    pr [number|url]            Create a worktree for PR review
+    list                       List all worktrees
+    path                       Get path of a worktree (interactive)
+    edit                       Open a worktree in editor (interactive)
+    ai                         Open a worktree in AI (interactive)
+    remove                     Remove a worktree (interactive)
+    prune                      Clean up stale worktrees
+    status                     Show status of all worktrees
+    help                       Show this help message
 
 DIRECTORY STRUCTURE:
     ${GIT_WTM_WORKTREE_BASE_DIR}/\$REPOSITORY_NAME/\$BRANCH_NAME/
@@ -72,6 +72,7 @@ DIRECTORY STRUCTURE:
 
 EXAMPLES:
     git-wtm add feature-branch
+    git-wtm add v1.0.0       # Create worktree from tag
     git-wtm pr 123
     git-wtm pr https://github.com/owner/repo/pull/123
     git-wtm pr              # Interactive PR selection (requires gh CLI)
