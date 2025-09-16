@@ -141,20 +141,6 @@ git-wtm ai
 - **fzf** - For interactive selection
 - **gh** (optional) - For PR management features
 
-### Installing Dependencies
-
-```bash
-# macOS with Homebrew
-brew install fzf gh
-
-# Ubuntu/Debian
-sudo apt install fzf gh
-
-# Manual fzf installation
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install
-```
-
 ## Advanced Usage
 
 ### Custom Worktree Paths
@@ -182,9 +168,6 @@ git-wtm pr  # Shows list of open PRs
 Add to your shell profile for enhanced experience:
 
 ```bash
-# Bash/Zsh alias for quick access
-alias gwt="git-wtm"
-
 # Function to cd into selected worktree
 gwcd() {
     local path=$(git-wtm path)
