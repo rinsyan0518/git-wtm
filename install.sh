@@ -11,7 +11,7 @@ REPO_URL="https://raw.githubusercontent.com/rinsyan0518/git-wtm/${BASE}"
 SCRIPT_NAME="git-wtm"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
-echo "Installing ${SCRIPT_NAME} ..."
+echo "Installing ${SCRIPT_NAME} to ${INSTALL_DIR} ..."
 
 # Create install directory
 mkdir -p "${INSTALL_DIR}"
