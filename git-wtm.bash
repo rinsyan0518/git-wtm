@@ -6,6 +6,8 @@
 set -euo pipefail
 
 # Configuration
+SCRIPT_NAME="$(basename "$0")"
+readonly SCRIPT_NAME
 readonly GIT_WTM_WORKTREE_BASE_DIR="${GIT_WTM_WORKTREE_BASE_DIR:-$HOME/.git-worktree}"
 readonly GIT_WTM_EDITOR="${GIT_WTM_EDITOR:-${EDITOR:-vim}}"
 readonly GIT_WTM_AI="${GIT_WTM_AI:-claude}"
@@ -42,10 +44,10 @@ readonly NC='\033[0m' # No Color
 # Display help information and usage examples
 usage() {
     cat << EOF
-git-wtm - Git Worktree Manager
+$SCRIPT_NAME - Git Worktree Manager
 
 USAGE:
-    git-wtm <command> [options]
+    $SCRIPT_NAME <command> [options]
 
 COMMANDS:
     add <branch|tag> [path]    Create a new worktree from branch or tag
@@ -64,16 +66,16 @@ DIRECTORY STRUCTURE:
     ${GIT_WTM_WORKTREE_BASE_DIR}/\$REPOSITORY_NAME/pr-\$NUMBER/
 
 EXAMPLES:
-    git-wtm add feature-branch
-    git-wtm add v1.0.0       # Create worktree from tag
-    git-wtm pr 123
-    git-wtm pr https://github.com/owner/repo/pull/123
-    git-wtm pr              # Interactive PR selection (requires gh CLI)
-    git-wtm list
-    git-wtm path
-    git-wtm edit            # Open worktree in ${GIT_WTM_EDITOR}
-    git-wtm ai              # Open worktree in ${GIT_WTM_AI}
-    git-wtm remove
+    $SCRIPT_NAME add feature-branch
+    $SCRIPT_NAME add v1.0.0       # Create worktree from tag
+    $SCRIPT_NAME pr 123
+    $SCRIPT_NAME pr https://github.com/owner/repo/pull/123
+    $SCRIPT_NAME pr              # Interactive PR selection (requires gh CLI)
+    $SCRIPT_NAME list
+    $SCRIPT_NAME path
+    $SCRIPT_NAME edit            # Open worktree in ${GIT_WTM_EDITOR}
+    $SCRIPT_NAME ai              # Open worktree in ${GIT_WTM_AI}
+    $SCRIPT_NAME remove
 
 ENVIRONMENTS:
     \$GIT_WTM_WORKTREE_BASE_DIR: ${GIT_WTM_WORKTREE_BASE_DIR}
@@ -146,7 +148,6 @@ main() {
 validate_add_args() {
     if [[ $# -eq 0 ]]; then
         error "Branch name is required"
-        echo "Usage: git-wt add <branch> [path]"
         return 1
     fi
 
@@ -257,7 +258,6 @@ handle_interactive_pr_selection() {
 
     if [[ -z "$pr_list" ]]; then
         warn "No open PRs found or failed to fetch PR list"
-        echo "Usage: git-wt pr <pr-number|pr-url>"
         return 1
     fi
 
