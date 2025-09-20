@@ -45,8 +45,8 @@ git-wtm edit
 # Remove worktree (interactive with safety checks)
 git-wtm remove
 
-# Show detailed status
-git-wtm status
+# List all worktrees with detailed status
+git-wtm list
 ```
 
 ## Commands
@@ -55,13 +55,12 @@ git-wtm status
 | -------------------------- | ----------------------------------------- |
 | `add <branch\|tag> [path]` | Create a new worktree from branch or tag  |
 | `pr [number\|url]`         | Create a worktree for PR review           |
-| `list`                     | List all worktrees                        |
+| `list`                     | List all worktrees with detailed status   |
 | `path`                     | Get path of a worktree (interactive)      |
 | `edit`                     | Open a worktree in editor (interactive)   |
 | `ai`                       | Open a worktree in AI agent (interactive) |
 | `remove`                   | Remove a worktree (interactive)           |
 | `prune`                    | Clean up stale worktrees                  |
-| `status`                   | Show status of all worktrees              |
 | `help`                     | Show help message                         |
 
 ## Directory Structure
@@ -172,7 +171,7 @@ git-wtm add feature-branch /path/to/custom/location
 
 ```bash
 # Show status of all worktrees
-git-wtm status
+git-wtm list
 
 # Clean up all stale references
 git-wtm prune
