@@ -113,10 +113,10 @@ main() {
             cmd_path "$@"
             ;;
         edit)
-            cmd_edit "$@"
+            cmd_run_external_command "${GIT_WTM_EDITOR}" "$@"
             ;;
         ai)
-            cmd_ai "$@"
+            cmd_run_external_command "${GIT_WTM_AI}" "$@"
             ;;
         remove|rm)
             cmd_remove "$@"
@@ -394,14 +394,17 @@ cmd_path() {
     echo "$selected_path"
 }
 
-# Open a selected worktree in the default editor
-# Requires: GIT_WTM_EDITOR environment variable
-cmd_edit() {
+# Open a selected worktree in an external command (editor, AI, etc.)
+# Args: command_name
+# Returns: 0 on success, 1 on failure
+cmd_run_external_command() {
     ensure_git_repo
     require_fzf
 
+    local cmd="${1}"
+
     local selected_path
-    selected_path=$(select_worktree "Open worktree in editor")
+    selected_path=$(select_worktree "Open worktree in ${cmd}")
 
     if [[ -z "$selected_path" ]]; then
         warn "No worktree selected"
@@ -413,47 +416,15 @@ cmd_edit() {
         return 1
     fi
 
-    info "Opening worktree in $GIT_WTM_EDITOR: $selected_path"
+    info "Opening worktree in ${cmd}: $selected_path"
 
     cd "$selected_path"
 
-    # Open the worktree directory in the editor
-    if "$GIT_WTM_EDITOR"; then
-        success "Editor session completed"
+    # Execute the external command in the worktree directory
+    if "${cmd}"; then
+        success "${cmd} session completed"
     else
-        error "Failed to open editor"
-        return 1
-    fi
-}
-
-# Open a selected worktree in an AI
-# Requires: GIT_WTM_AI environment variable
-cmd_ai() {
-    ensure_git_repo
-    require_fzf
-
-    local selected_path
-    selected_path=$(select_worktree "Open worktree in AI")
-
-    if [[ -z "$selected_path" ]]; then
-        warn "No worktree selected"
-        return 0
-    fi
-
-    if [[ ! -d "$selected_path" ]]; then
-        error "Worktree directory does not exist: $selected_path"
-        return 1
-    fi
-
-    info "Opening worktree in $GIT_WTM_AI: $selected_path"
-
-    cd "$selected_path"
-
-    # Open the worktree directory in the AI
-    if "$GIT_WTM_AI"; then
-        success "AI session completed"
-    else
-        error "Failed to open AI"
+        error "Failed to open ${cmd}"
         return 1
     fi
 }
