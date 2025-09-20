@@ -107,7 +107,7 @@ main() {
             cmd_pr "$@"
             ;;
         list|ls)
-            cmd_status "$@"
+            cmd_list "$@"
             ;;
         path)
             cmd_path "$@"
@@ -123,9 +123,6 @@ main() {
             ;;
         prune)
             cmd_prune "$@"
-            ;;
-        status|st)
-            cmd_status "$@"
             ;;
         help|--help|-h)
             usage
@@ -477,9 +474,9 @@ cmd_prune() {
     fi
 }
 
-# Callback function for detailed worktree status output
+# Callback function for detailed worktree list output
 # Args: path branch commit is_bare counter_file
-status_worktree_callback() {
+list_worktree_callback() {
     local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4" counter_file="$5"
 
     # Only count non-bare worktrees
@@ -513,8 +510,8 @@ status_worktree_callback() {
     fi
 }
 
-# Show detailed status of all worktrees
-cmd_status() {
+# List all worktrees with detailed status information
+cmd_list() {
     ensure_git_repo
 
     local worktrees
@@ -546,7 +543,7 @@ cmd_status() {
             is_bare=true
         elif [[ -z "$line" ]] && [[ -n "$current_path" ]]; then
             # End of worktree entry, process it
-            status_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
+            list_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
 
             # Reset variables
             current_path="" current_branch="" current_commit="" is_bare=false
@@ -555,7 +552,7 @@ cmd_status() {
 
     # Process the last entry if it exists
     if [[ -n "$current_path" ]]; then
-        status_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
+        list_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
     fi
 
     local total_worktrees
