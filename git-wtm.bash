@@ -107,7 +107,7 @@ main() {
             cmd_pr "$@"
             ;;
         list|ls)
-            cmd_list "$@"
+            cmd_status "$@"
             ;;
         path)
             cmd_path "$@"
@@ -322,55 +322,6 @@ cmd_pr() {
     fi
 }
 
-# Callback function for formatting worktree list output
-# Args: path branch commit is_bare
-list_worktree_callback() {
-    local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4"
-
-    if $is_bare; then
-        echo -e "${YELLOW}📁${NC} $current_path (bare repository)"
-    else
-        local status_icon="📂" status_color="$NC"
-
-        # Check if it's the current worktree
-        if is_current_worktree "$current_path"; then
-            status_icon="📍"
-            status_color="$GREEN"
-        fi
-
-        # Show branch and path
-        echo -e "${status_color}${status_icon} ${current_branch:-detached} ${NC}→ $current_path"
-
-        # Show commit info
-        if [[ -n "$current_commit" ]] && [[ -d "$current_path" ]]; then
-            local commit_msg
-            commit_msg=$(execute_git_in_worktree "$current_path" log -1 --format="%s" || echo "")
-            if [[ -n "$commit_msg" ]]; then
-                echo -e "   ${current_commit:0:8} $commit_msg"
-            fi
-        fi
-    fi
-
-    echo
-}
-
-# List all worktrees with status information
-cmd_list() {
-    ensure_git_repo
-
-    local worktrees
-    worktrees=$(git worktree list --porcelain)
-
-    if [[ -z "$worktrees" ]]; then
-        warn "No worktrees found"
-        return 0
-    fi
-
-    echo -e "${BLUE}Worktrees for repository: $(get_repo_name)${NC}"
-    echo
-
-    parse_worktree_porcelain "list_worktree_callback" "$worktrees"
-}
 
 # Get the path of a selected worktree (interactive)
 # Outputs: worktree path to stdout
