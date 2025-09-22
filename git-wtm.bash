@@ -56,6 +56,7 @@ COMMANDS:
     path                       Get path of a worktree (interactive)
     edit                       Open a worktree in editor (interactive)
     ai                         Open a worktree in AI (interactive)
+    tool <command>             Run custom command in selected worktree (supports {} placeholder)
     remove                     Remove a worktree (interactive)
     prune                      Clean up stale worktrees
     status                     Show status of all worktrees
@@ -75,6 +76,7 @@ EXAMPLES:
     $SCRIPT_NAME path
     $SCRIPT_NAME edit            # Open worktree in ${GIT_WTM_EDITOR}
     $SCRIPT_NAME ai              # Open worktree in ${GIT_WTM_AI}
+    $SCRIPT_NAME tool "code {}"  # Open worktree in VS Code (supports {} placeholder)
     $SCRIPT_NAME remove
 
 ENVIRONMENTS:
@@ -117,6 +119,9 @@ main() {
             ;;
         ai)
             cmd_run_external_command "${GIT_WTM_AI}" "$@"
+            ;;
+        tool)
+            cmd_run_external_command "$@"
             ;;
         remove|rm)
             cmd_remove "$@"
@@ -329,16 +334,10 @@ cmd_path() {
     local selected_path
     selected_path=$(select_worktree "Get worktree path")
 
-    if [[ -z "$selected_path" ]]; then
+    if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    if [[ ! -d "$selected_path" ]]; then
-        error "Worktree directory does not exist: $selected_path" >&2
-        return 1
-    fi
-
-    # Output only the path
     echo "$selected_path"
 }
 
@@ -352,29 +351,21 @@ cmd_run_external_command() {
     local cmd="${1}"
 
     local selected_path
-    selected_path=$(select_worktree "Open worktree in ${cmd}")
+    selected_path=$(select_worktree "Open worktree")
 
-    if [[ -z "$selected_path" ]]; then
-        warn "No worktree selected"
-        return 0
-    fi
-
-    if [[ ! -d "$selected_path" ]]; then
-        error "Worktree directory does not exist: $selected_path"
+    if [[ $? -ne 0 ]]; then
         return 1
     fi
 
-    info "Opening worktree in ${cmd}: $selected_path"
+    info "Opening worktree: $selected_path"
 
     cd "$selected_path"
 
+    local expanded_cmd
+    expanded_cmd="${cmd//\{\}/$selected_path}"
+
     # Execute the external command in the worktree directory
-    if "${cmd}"; then
-        success "${cmd} session completed"
-    else
-        error "Failed to open ${cmd}"
-        return 1
-    fi
+    eval ${expanded_cmd}
 }
 
 # Remove a selected worktree (interactive with confirmation)
@@ -386,8 +377,7 @@ cmd_remove() {
     local selected_path
     selected_path=$(select_worktree "Remove worktree")
 
-    if [[ -z "$selected_path" ]]; then
-        warn "No worktree selected"
+    if [[ $? -ne 0 ]]; then
         return 0
     fi
 
@@ -820,10 +810,21 @@ select_worktree() {
     local selected
     selected=$(echo "$worktree_list" | fzf --prompt="$prompt > " --height=15 --border)
 
-    if [[ -n "$selected" ]]; then
-        # Extract path after the tab delimiter
-        echo "$selected" | cut -d$'\t' -f2
+    if [[ -z "$selected" ]]; then
+        error "No worktree selected"
+        return 1
     fi
+
+    # Extract path after the tab delimiter
+    local selected_path
+    selected_path=$(echo "$selected" | cut -d$'\t' -f2)
+
+    if [[ ! -d "$selected_path" ]]; then
+        error "Worktree directory does not exist: $selected_path"
+        return 1
+    fi
+
+    echo $selected_path
 }
 
 # Extract PR number from various input formats

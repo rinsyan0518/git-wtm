@@ -59,6 +59,7 @@ git-wtm list
 | `path`                     | Get path of a worktree (interactive)      |
 | `edit`                     | Open a worktree in editor (interactive)   |
 | `ai`                       | Open a worktree in AI agent (interactive) |
+| `tool <command>`           | Run custom command in selected worktree (supports `{}` placeholder) |
 | `remove`                   | Remove a worktree (interactive)           |
 | `prune`                    | Clean up stale worktrees                  |
 | `help`                     | Show help message                         |
@@ -150,6 +151,27 @@ GIT_WTM_EDITOR="nvim" git-wtm edit
 
 # Open worktree in AI assistant
 git-wtm ai
+```
+
+### Custom Tool Commands
+
+The `tool` command allows you to run any command in a selected worktree with `{}` placeholder support:
+
+```bash
+# Open worktree in VS Code
+git-wtm tool "code {}"
+
+# Open terminal in worktree directory
+git-wtm tool "gnome-terminal --working-directory={}"
+
+# Run tests in worktree
+git-wtm tool "npm test"
+
+# Count JavaScript files
+git-wtm tool "find {} -name '*.js' | wc -l"
+
+# Build and deploy
+git-wtm tool "npm run build && npm run deploy"
 ```
 
 ## Requirements
