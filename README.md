@@ -51,18 +51,18 @@ git-wtm list
 
 ## Commands
 
-| Command                    | Description                               |
-| -------------------------- | ----------------------------------------- |
-| `add <branch\|tag> [path]` | Create a new worktree from branch or tag  |
-| `pr [number\|url]`         | Create a worktree for PR review           |
-| `list`                     | List all worktrees with detailed status   |
-| `path`                     | Get path of a worktree (interactive)      |
-| `edit`                     | Open a worktree in editor (interactive)   |
-| `ai`                       | Open a worktree in AI agent (interactive) |
+| Command                    | Description                                                         |
+| -------------------------- | ------------------------------------------------------------------- |
+| `add <branch\|tag> [path]` | Create a new worktree from branch or tag                            |
+| `pr [number\|url]`         | Create a worktree for PR review                                     |
+| `list`                     | List all worktrees with detailed status                             |
+| `path`                     | Get path of a worktree (interactive)                                |
+| `edit`                     | Open a worktree in editor (interactive)                             |
+| `ai`                       | Open a worktree in AI agent (interactive)                           |
 | `tool <command>`           | Run custom command in selected worktree (supports `{}` placeholder) |
-| `remove`                   | Remove a worktree (interactive)           |
-| `prune`                    | Clean up stale worktrees                  |
-| `help`                     | Show help message                         |
+| `remove`                   | Remove a worktree (interactive)                                     |
+| `prune`                    | Clean up stale worktrees                                            |
+| `help`                     | Show help message                                                   |
 
 ## Directory Structure
 
@@ -214,13 +214,23 @@ gwcd() {
 }
 ```
 
-## Tips & Tricks
+### Git Integration
 
-- Use `git-wtm list` to get an overview of all your worktrees
-- The `git-wtm edit` command respects your `$GIT_WTM_EDITOR` setting
-- PR worktrees are automatically named `pr-<number>` for easy identification
-- Safety checks prevent accidental deletion of worktrees with uncommitted changes
-- Empty parent directories are automatically cleaned up after worktree removal
+Since the binary is named `git-wtm`, you can call it directly as a Git subcommand:
+
+```bash
+git wtm list
+git wtm add feature-branch
+```
+
+You can also extend functionality by adding custom aliases to your `.gitconfig`:
+
+```ini
+[alias]
+	wtm-code = "wtm tool code {}"
+```
+
+This allows you to easily create specialized commands that fit your workflow.
 
 ## License
 
