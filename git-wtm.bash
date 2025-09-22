@@ -12,6 +12,41 @@ readonly GIT_WTM_WORKTREE_BASE_DIR="${GIT_WTM_WORKTREE_BASE_DIR:-$HOME/.git-work
 readonly GIT_WTM_EDITOR="${GIT_WTM_EDITOR:-${EDITOR:-vim}}"
 readonly GIT_WTM_AI="${GIT_WTM_AI:-claude}"
 
+# Colors for output
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m' # No Color
+
+# ============================================================================
+# Logging functions
+# ============================================================================
+
+# Print formatted info message
+# Args: message
+info() {
+    echo -e "${BLUE}ℹ${NC} $1"
+}
+
+# Print formatted success message
+# Args: message
+success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+# Print formatted warning message
+# Args: message
+warn() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+# Print formatted error message to stderr
+# Args: message
+error() {
+    echo -e "${RED}✗${NC} $1" >&2
+}
+
 # ============================================================================
 # Dependency checking functions
 # ============================================================================
@@ -34,12 +69,20 @@ require_gh() {
     fi
 }
 
-# Colors for output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly NC='\033[0m' # No Color
+# Check if fzf is installed and available
+# Ensure we're running inside a git repository
+# Exits with error if not in a git repository
+ensure_git_repo() {
+    if ! command -v git >/dev/null 2>&1; then
+        echo "Git is required but not installed"
+        exit 1
+    fi
+
+    if ! git rev-parse --git-dir >/dev/null 2>&1; then
+        echo -e "${RED}Error: Not in a git repository${NC}" >&2
+        exit 1
+    fi
+}
 
 # Display help information and usage examples
 usage() {
@@ -144,10 +187,12 @@ main() {
 # Command implementations
 # ============================================================================
 
-# Validate and prepare arguments for worktree creation
+# Create a new worktree for the specified branch
 # Args: branch_name [custom_path]
-# Returns: 0 on success, 1 on validation failure
-validate_add_args() {
+cmd_add() {
+    ensure_git_repo
+
+    # Validate arguments
     if [[ $# -eq 0 ]]; then
         error "Branch name is required"
         return 1
@@ -159,66 +204,6 @@ validate_add_args() {
         return 1
     fi
 
-    return 0
-}
-
-# Create worktree with multiple fallback strategies
-# Args: worktree_path branch_name
-# Returns: 0 on success, 1 on failure
-create_worktree_with_fallback() {
-    local worktree_path="$1"
-    local branch="$2"
-
-    # Strategy 1: Create from tag
-    if git show-ref --verify --quiet "refs/tags/$branch"; then
-        local tag_branch="tags-$branch"
-        if git worktree add "$worktree_path" -b "$tag_branch" "$branch"; then
-            success "Created worktree from tag '$branch' as branch '$tag_branch'"
-            return 0
-        else
-            error "Failed to create worktree from tag"
-            return 1
-        fi
-    fi
-
-    # Strategy 2: Use existing branch
-    if git worktree add "$worktree_path" "$branch" 2>/dev/null; then
-        success "Worktree created successfully"
-        return 0
-    fi
-
-    # Strategy 3: Create new local branch
-    if git worktree add "$worktree_path" -b "$branch" 2>/dev/null; then
-        success "Created new branch '$branch' and worktree"
-        return 0
-    fi
-
-    # Strategy 4: Create from remote branch
-    if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-        if git worktree add "$worktree_path" -b "$branch" "origin/$branch"; then
-            success "Created worktree from remote branch 'origin/$branch'"
-            return 0
-        else
-            error "Failed to create worktree from remote branch"
-            return 1
-        fi
-    else
-        error "Branch '$branch' not found locally, remotely, or as tag"
-        return 1
-    fi
-}
-
-# Create a new worktree for the specified branch
-# Args: branch_name [custom_path]
-cmd_add() {
-    ensure_git_repo
-
-    # Validate arguments
-    if ! validate_add_args "$@"; then
-        return 1
-    fi
-
-    local branch="$1"
     local custom_path="${2:-}"
     local worktree_path
 
@@ -249,53 +234,6 @@ cmd_add() {
     else
         return 1
     fi
-}
-
-# Handle interactive PR selection using GitHub CLI
-# Returns: PR number on success, empty on failure/cancellation
-handle_interactive_pr_selection() {
-    info "Fetching open PRs..."
-    local pr_list
-    pr_list=$(gh pr list --json number,title --template '{{range .}}{{.number}} - {{.title}}{{"\n"}}{{end}}' 2>/dev/null)
-
-    if [[ -z "$pr_list" ]]; then
-        warn "No open PRs found or failed to fetch PR list"
-        return 1
-    fi
-
-    local selected
-    selected=$(echo "$pr_list" | fzf --prompt="Select PR > " --height=15 --border)
-
-    if [[ -n "$selected" ]]; then
-        echo "$selected" | cut -d' ' -f1
-        return 0
-    else
-        warn "No PR selected"
-        return 1
-    fi
-}
-
-# Process PR input argument and extract PR number
-# Args: pr_input
-# Returns: 0 on success with PR number echoed, 1 on failure
-process_pr_argument() {
-    local pr_input="$1"
-
-    # Validate input is not empty
-    if [[ -z "$pr_input" || "$pr_input" =~ ^[[:space:]]*$ ]]; then
-        error "PR number or URL cannot be empty"
-        return 1
-    fi
-
-    local pr_number
-    if ! pr_number=$(parse_pr_number "$pr_input"); then
-        error "Invalid PR number or URL: $pr_input"
-        echo "Expected: PR number (e.g., 123) or GitHub PR URL"
-        return 1
-    fi
-
-    echo "$pr_number"
-    return 0
 }
 
 # Create a worktree for PR review
@@ -331,9 +269,11 @@ cmd_path() {
     require_fzf
 
     local selected_path
+    local status
     selected_path=$(select_worktree "Get worktree path")
+    status=$?
 
-    if [[ $? -ne 0 ]]; then
+    if [[ $status -ne 0 ]]; then
         return 1
     fi
 
@@ -350,9 +290,11 @@ cmd_run_external_command() {
     local cmd="${1}"
 
     local selected_path
+    local status
     selected_path=$(select_worktree "Open worktree")
+    status=$?
 
-    if [[ $? -ne 0 ]]; then
+    if [[ $status -ne 0 ]]; then
         return 1
     fi
 
@@ -364,7 +306,7 @@ cmd_run_external_command() {
     expanded_cmd="${cmd//\{\}/$selected_path}"
 
     # Execute the external command in the worktree directory
-    eval ${expanded_cmd}
+    eval "${expanded_cmd}"
 }
 
 # Remove a selected worktree (interactive with confirmation)
@@ -374,9 +316,11 @@ cmd_remove() {
     require_fzf
 
     local selected_path
+    local status
     selected_path=$(select_worktree "Remove worktree")
+    status=$?
 
-    if [[ $? -ne 0 ]]; then
+    if [[ $status -ne 0 ]]; then
         return 0
     fi
 
@@ -460,35 +404,6 @@ cmd_prune() {
         else
             success "Removed $removed_count empty directories"
         fi
-    fi
-}
-
-# Callback function for detailed worktree list output
-# Args: path branch commit is_bare
-list_worktree_callback() {
-    local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4"
-
-    # Only show non-bare worktrees
-    if ! $is_bare; then
-        local status_icon="📂" status_color="$NC" status_text=""
-
-        # Check if it's the current worktree
-        if is_current_worktree "$current_path"; then
-            status_icon="📍"
-            status_color="$GREEN"
-            status_text=" (current)"
-        fi
-
-        # Show branch and path
-        echo -e "${status_color}${status_icon} ${current_branch:-detached}${status_text}${NC}"
-        echo -e "   Path: $current_path"
-
-        # Show git status
-        local git_status
-        git_status=$(get_git_status "$current_path")
-        echo -e "   Status: $git_status"
-
-        echo
     fi
 }
 
@@ -647,15 +562,6 @@ execute_git_in_worktree() {
     (cd "$worktree_path" && git "$@" 2>/dev/null)
 }
 
-# Ensure we're running inside a git repository
-# Exits with error if not in a git repository
-ensure_git_repo() {
-    if ! git rev-parse --git-dir >/dev/null 2>&1; then
-        echo -e "${RED}Error: Not in a git repository${NC}" >&2
-        exit 1
-    fi
-}
-
 # Extract repository name from remote URL or fallback to directory name
 # Returns: repository name string
 get_repo_name() {
@@ -695,28 +601,33 @@ get_worktree_path() {
     echo "$worktree_base/$sanitized_branch"
 }
 
-# Print formatted info message
-# Args: message
-info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
+# Callback function for detailed worktree list output
+# Args: path branch commit is_bare
+list_worktree_callback() {
+    local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4"
 
-# Print formatted success message
-# Args: message
-success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
+    # Only show non-bare worktrees
+    if ! $is_bare; then
+        local status_icon="📂" status_color="$NC" status_text=""
 
-# Print formatted warning message
-# Args: message
-warn() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
+        # Check if it's the current worktree
+        if is_current_worktree "$current_path"; then
+            status_icon="📍"
+            status_color="$GREEN"
+            status_text=" (current)"
+        fi
 
-# Print formatted error message to stderr
-# Args: message
-error() {
-    echo -e "${RED}✗${NC} $1" >&2
+        # Show branch and path
+        echo -e "${status_color}${status_icon} ${current_branch:-detached}${status_text}${NC}"
+        echo -e "   Path: $current_path"
+
+        # Show git status
+        local git_status
+        git_status=$(get_git_status "$current_path")
+        echo -e "   Status: $git_status"
+
+        echo
+    fi
 }
 
 # Callback function for formatting worktree selection list
@@ -783,7 +694,53 @@ select_worktree() {
         return 1
     fi
 
-    echo $selected_path
+    echo "$selected_path"
+}
+
+# Create worktree with multiple fallback strategies
+# Args: worktree_path branch_name
+# Returns: 0 on success, 1 on failure
+create_worktree_with_fallback() {
+    local worktree_path="$1"
+    local branch="$2"
+
+    # Strategy 1: Create from tag
+    if git show-ref --verify --quiet "refs/tags/$branch"; then
+        local tag_branch="tags-$branch"
+        if git worktree add "$worktree_path" -b "$tag_branch" "$branch"; then
+            success "Created worktree from tag '$branch' as branch '$tag_branch'"
+            return 0
+        else
+            error "Failed to create worktree from tag"
+            return 1
+        fi
+    fi
+
+    # Strategy 2: Use existing branch
+    if git worktree add "$worktree_path" "$branch" 2>/dev/null; then
+        success "Worktree created successfully"
+        return 0
+    fi
+
+    # Strategy 3: Create new local branch
+    if git worktree add "$worktree_path" -b "$branch" 2>/dev/null; then
+        success "Created new branch '$branch' and worktree"
+        return 0
+    fi
+
+    # Strategy 4: Create from remote branch
+    if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+        if git worktree add "$worktree_path" -b "$branch" "origin/$branch"; then
+            success "Created worktree from remote branch 'origin/$branch'"
+            return 0
+        else
+            error "Failed to create worktree from remote branch"
+            return 1
+        fi
+    else
+        error "Branch '$branch' not found locally, remotely, or as tag"
+        return 1
+    fi
 }
 
 # Extract PR number from various input formats
@@ -861,6 +818,53 @@ create_pr_worktree() {
         git branch -D "pr-$pr_number" 2>/dev/null
         return 1
     fi
+}
+
+# Handle interactive PR selection using GitHub CLI
+# Returns: PR number on success, empty on failure/cancellation
+handle_interactive_pr_selection() {
+    info "Fetching open PRs..."
+    local pr_list
+    pr_list=$(gh pr list --json number,title --template '{{range .}}{{.number}} - {{.title}}{{"\n"}}{{end}}' 2>/dev/null)
+
+    if [[ -z "$pr_list" ]]; then
+        warn "No open PRs found or failed to fetch PR list"
+        return 1
+    fi
+
+    local selected
+    selected=$(echo "$pr_list" | fzf --prompt="Select PR > " --height=15 --border)
+
+    if [[ -n "$selected" ]]; then
+        echo "$selected" | cut -d' ' -f1
+        return 0
+    else
+        warn "No PR selected"
+        return 1
+    fi
+}
+
+# Process PR input argument and extract PR number
+# Args: pr_input
+# Returns: 0 on success with PR number echoed, 1 on failure
+process_pr_argument() {
+    local pr_input="$1"
+
+    # Validate input is not empty
+    if [[ -z "$pr_input" || "$pr_input" =~ ^[[:space:]]*$ ]]; then
+        error "PR number or URL cannot be empty"
+        return 1
+    fi
+
+    local pr_number
+    if ! pr_number=$(parse_pr_number "$pr_input"); then
+        error "Invalid PR number or URL: $pr_input"
+        echo "Expected: PR number (e.g., 123) or GitHub PR URL"
+        return 1
+    fi
+
+    echo "$pr_number"
+    return 0
 }
 
 # Run main function
