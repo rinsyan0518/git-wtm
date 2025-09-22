@@ -324,7 +324,6 @@ cmd_pr() {
     fi
 }
 
-
 # Get the path of a selected worktree (interactive)
 # Outputs: worktree path to stdout
 cmd_path() {
@@ -465,19 +464,12 @@ cmd_prune() {
 }
 
 # Callback function for detailed worktree list output
-# Args: path branch commit is_bare counter_file
+# Args: path branch commit is_bare
 list_worktree_callback() {
-    local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4" counter_file="$5"
+    local current_path="$1" current_branch="$2" current_commit="$3" is_bare="$4"
 
-    # Only count non-bare worktrees
+    # Only show non-bare worktrees
     if ! $is_bare; then
-        # Increment counter in temp file
-        if [[ -n "$counter_file" ]]; then
-            local count
-            count=$(cat "$counter_file" 2>/dev/null || echo "0")
-            echo $((count + 1)) > "$counter_file"
-        fi
-
         local status_icon="📂" status_color="$NC" status_text=""
 
         # Check if it's the current worktree
@@ -515,41 +507,8 @@ cmd_list() {
     echo -e "${BLUE}Repository: $(get_repo_name)${NC}"
     echo
 
-    # Use temp file for counting instead of global variable
-    local counter_file
-    counter_file=$(mktemp)
-    echo "0" > "$counter_file"
-
-    # Parse worktrees with counter
-    local current_path="" current_branch="" current_commit="" is_bare=false
-    while IFS= read -r line; do
-        if [[ "$line" =~ ^worktree\ (.+) ]]; then
-            current_path="${BASH_REMATCH[1]}"
-        elif [[ "$line" =~ ^branch\ refs/heads/(.+) ]]; then
-            current_branch="${BASH_REMATCH[1]}"
-        elif [[ "$line" =~ ^HEAD\ ([a-f0-9]+) ]]; then
-            current_commit="${BASH_REMATCH[1]}"
-        elif [[ "$line" == "bare" ]]; then
-            is_bare=true
-        elif [[ -z "$line" ]] && [[ -n "$current_path" ]]; then
-            # End of worktree entry, process it
-            list_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
-
-            # Reset variables
-            current_path="" current_branch="" current_commit="" is_bare=false
-        fi
-    done <<< "$worktrees"
-
-    # Process the last entry if it exists
-    if [[ -n "$current_path" ]]; then
-        list_worktree_callback "$current_path" "$current_branch" "$current_commit" "$is_bare" "$counter_file"
-    fi
-
-    local total_worktrees
-    total_worktrees=$(cat "$counter_file")
-    rm -f "$counter_file"
-
-    echo -e "${BLUE}Total worktrees: $total_worktrees${NC}"
+    # Parse worktrees
+    parse_worktree_porcelain "list_worktree_callback" "$worktrees"
 }
 
 # ============================================================================
